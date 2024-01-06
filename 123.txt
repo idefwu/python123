@@ -1,0 +1,607 @@
+/* 1-18 */
+UPDATE 公司.dbo.高薪員工
+SET 薪水 = 48000
+WHERE 姓名 = '李紹綸'
+
+/* 1-23 */
+ALTER TABLE 公司.dbo.員工 ALTER COLUMN 姓名 VARCHAR(20);
+
+/* 1-27 */
+CREATE VIEW 高薪員工 
+AS 
+SELECT * 
+FROM 員工
+WHERE 薪水 >= 50000;
+
+/* 1-28 */
+CREATE VIEW 員工計劃
+AS
+SELECT 姓名,計劃名稱 
+FROM 員工,參加,計劃 
+WHERE 員工.身分證號碼 = 參加.身分證號碼 
+AND 參加.計劃代號 = 計劃.計劃代號 
+AND 計劃.計劃代號 IN (1,2);
+
+/* 1-29 */
+CREATE VIEW 員工參加計劃時數(姓名,總工作時數) 
+AS 
+SELECT 姓名,SUM(工作時數) 
+FROM 員工,參加,計劃 
+WHERE 員工.身分證號碼 = 參加.身分證號碼 
+AND 參加.計劃代號 = 計劃.計劃代號 
+AND 計劃.計劃代號 IN (1,2) 
+GROUP BY 姓名;
+
+/* 1-30 */
+ALTER VIEW 高薪員工 
+AS 
+SELECT * FROM 員工
+WHERE 薪水 >= 50000
+WITH CHECK OPTION;
+
+/* 1-31 */
+ALTER VIEW 員工計劃
+WITH SCHEMABINDING
+AS
+SELECT 姓名,計劃名稱 
+FROM dbo.員工,dbo.參加,dbo.計劃 
+WHERE 員工.身分證號碼 = 參加.身分證號碼 
+AND 參加.計劃代號 = 計劃.計劃代號 
+AND 計劃.計劃代號 IN (1,2);
+
+/* 1-32 */
+ALTER VIEW 員工參加計劃時數(姓名,總工作時數) 
+WITH ENCRYPTION
+AS 
+SELECT 姓名,SUM(工作時數) 
+FROM 員工,參加,計劃 
+WHERE 員工.身分證號碼 = 參加.身分證號碼 
+AND 參加.計劃代號 = 計劃.計劃代號 
+AND 計劃.計劃代號 IN (1,2) 
+GROUP BY 姓名;
+
+/* 1-33 */
+SELECT * FROM sys.syscomments;
+
+/* 1-34 */
+INSERT INTO 高薪員工 VALUES
+('K111111111', '郭信義', '1975-07-30', '台北市忠孝路186號', 55000, Null, Null);
+
+SELECT * FROM 高薪員工;
+
+SELECT * FROM 員工;
+
+/* 1-35 */
+INSERT INTO 員工計劃(姓名,計劃名稱) VALUES('李鴻章','P1');
+
+/* 1-36 */
+INSERT INTO 員工參加計劃時數(姓名,總工作時數) VALUES('李鴻章',10);
+
+/* 1-37 */
+UPDATE 高薪員工 
+SET 薪水 = 52000
+WHERE 姓名 = '郭信義';
+
+SELECT * FROM 高薪員工;
+
+SELECT * FROM 員工;
+
+/* 1-38 */
+DELETE 
+FROM 高薪員工
+WHERE 姓名 = '郭信義';
+
+SELECT * FROM 高薪員工;
+
+SELECT * FROM 員工; 
+
+/* 1-39 */
+DROP VIEW 高薪員工,員工計劃,員工參加計劃時數;
+
+/* 2-28 */
+INSERT INTO 公司.dbo.員工 
+VALUES('P111122222', '李紹綸', '1983-05-07', '中和市中和路168號', 25000, Null, Null);
+
+/* 2-35 */
+CREATE UNIQUE NONCLUSTERED INDEX IX_員工_姓名 
+ON 員工 (姓名) 
+INCLUDE (生日, 地址, 薪水);
+
+/* 2-36 */
+CREATE NONCLUSTERED INDEX IX_員工眷屬_眷屬姓名 
+ON 員工眷屬 (眷屬姓名) ;
+
+/* 2-37 */
+ALTER INDEX IX_員工_姓名 
+ON 員工 
+SET (IGNORE_DUP_KEY = ON) ;
+
+/* 2-38 */
+ALTER INDEX IX_員工眷屬_眷屬姓名 
+ON 員工眷屬 
+REBUILD WITH (PAD_INDEX = ON, FILLFACTOR = 70) ;
+
+/* 2-39 */
+DROP INDEX 員工.IX_員工_姓名,員工眷屬.IX_員工眷屬_眷屬姓名 ;
+
+/* 3-14 */
+BEGIN TRAN
+UPDATE 參加
+SET 工作時數 = 工作時數 - 5
+WHERE 計劃代號 = 1 
+AND 身分證號碼 IN (SELECT 身分證號碼 FROM 員工 WHERE 姓名 = '李紹綸');
+IF @@ERROR != 0  OR @@ROWCOUNT = 0
+   BEGIN
+     PRINT '修改李紹綸所參加計劃代號 1 的工作時數時產生錯誤 !!'
+     RETURN
+   END
+UPDATE 參加
+SET 工作時數 = 工作時數 + 5
+WHERE 計劃代號 = 1 
+AND 身分證號碼 IN (SELECT 身分證號碼 FROM 員工 WHERE 姓名 = '賴怡君');
+IF @@ERROR != 0 OR @@ROWCOUNT = 0
+   BEGIN
+     ROLLBACK TRAN
+     PRINT '修改賴怡君所參加計劃代號 1 的工作時數時產生錯誤 !!'
+     RETURN
+   END
+ELSE COMMIT TRAN
+SELECT * FROM 參加;
+
+/* 3-15 */
+BEGIN TRAN
+UPDATE 參加
+SET 工作時數 = 工作時數 - 5
+WHERE 計劃代號 = 1 AND 
+身分證號碼 IN (SELECT 身分證號碼 FROM 員工 WHERE 姓名 = '李紹綸');
+IF @@ERROR != 0  OR @@ROWCOUNT = 0
+   BEGIN
+     PRINT '修改李紹綸所參加計劃代號 1 的工作時數時產生錯誤 !!'
+     RETURN
+   END
+UPDATE 參加
+SET 工作時數 = 工作時數 + 5
+WHERE 計劃代號 = 1 AND 
+身分證號碼 IN (SELECT 身分證號碼 FROM 員工 WHERE 姓名 = '莊雅玫');
+IF @@ERROR != 0 OR @@ROWCOUNT = 0
+   BEGIN
+     ROLLBACK TRAN
+     PRINT '修改莊雅玫所參加計劃代號 1 的工作時數時產生錯誤 !!'
+     RETURN
+   END
+ELSE COMMIT TRAN
+SELECT * FROM 參加;
+
+/* 3-16 */
+BEGIN TRAN
+UPDATE 參加
+SET 工作時數 = 工作時數 - 5
+WHERE 計劃代號 = 1 AND 
+身分證號碼 IN (SELECT 身分證號碼 FROM 員工 WHERE 姓名 = '李紹綸');
+IF @@ERROR != 0  OR @@ROWCOUNT = 0
+   BEGIN
+     PRINT '修改李紹綸所參加計劃代號 1 的工作時數時產生錯誤 !!'
+     RETURN
+   END
+UPDATE 參加
+SET 工作時數 = 工作時數 + 5
+WHERE 計劃代號 = 1 AND 
+身分證號碼 IN (SELECT 身分證號碼 FROM 員工 WHERE 姓名 = '莊雅玫');
+IF @@ERROR != 0 OR @@ROWCOUNT = 0
+   BEGIN
+     ROLLBACK TRAN
+     PRINT '修改莊雅玫所參加計劃代號 1 的工作時數時產生錯誤 !!'
+     /* RETURN */
+   END
+ELSE COMMIT TRAN
+SELECT * FROM 參加;
+
+/* 3-17 */
+CREATE PROC 計劃工作時數移轉
+@轉出姓名 varchar(3),@轉入姓名 varchar(15),@計劃代號 int,@工作時數 int
+AS
+BEGIN TRAN                              /* 開始交易 */ 
+UPDATE 參加
+SET 工作時數 = 工作時數 - @工作時數
+WHERE 計劃代號 = @計劃代號 AND 
+身分證號碼 IN (SELECT 身分證號碼 FROM 員工 WHERE 姓名 = @轉出姓名);
+IF @@ERROR != 0  OR @@ROWCOUNT = 0
+   GOTO ErrorHandle
+UPDATE 參加
+SET 工作時數 = 工作時數 + @工作時數
+WHERE 計劃代號 = @計劃代號 AND 
+身分證號碼 IN (SELECT 身分證號碼 FROM 員工 WHERE 姓名 = @轉入姓名);
+ERRORHandle:
+IF @@ERROR != 0 OR @@ROWCOUNT = 0       /* 如果發生錯誤或更新筆數為 0 */
+BEGIN
+  IF @@TRANCOUNT = 1                    /* 如果是最外層交易 */
+     ROLLBACK TRAN                      /* 則 ROLLBACK */
+  ELSE                                  /* 否則執行 COMMIT 會將 @@TRANCOUNT - 1 */
+     COMMIT TRAN
+  PRINT '修改' + @轉出姓名 + '或' + @轉入姓名 + 
+       '所參加計劃代號' + CAST(@計劃代號 AS varchar(2)) + '的工作時數時產生錯誤 !!'
+  RETURN 0                              /* 傳回 0 表示交易失敗 */
+END
+ELSE
+BEGIN
+  COMMIT TRAN
+  RETURN 1                              /* 傳回 1 表示交易成功 */
+END
+GO
+
+/* 3-18 */
+DECLARE @Transfer int
+BEGIN TRAN
+   EXEC @Transfer = 計劃工作時數移轉 '李紹綸','賴怡君',1,5
+   /* 如果執行計劃工作時數移轉這個內層交易成功則繼續執行下一項計劃工作時數移轉 */
+   IF @Transfer = 1 
+      EXEC @Transfer = 計劃工作時數移轉 '李紹綸','莊雅玫',1,5
+   /* 如果執行2個計劃工作時數移轉內層交易都成功則執行 COMMIT 將交易真正執行 */
+   IF @Transfer = 1
+      COMMIT TRAN 
+   /* 否則 ROLLBACK */
+   ELSE
+      ROLLBACK TRAN 
+GO
+
+/* 3-19 */
+SELECT * FROM 參加;
+
+/* 3-28 */
+SET XACT_ABORT ON
+BEGIN DISTRIBUTED TRAN
+UPDATE [120.96.63.45].公司.dbo.參加
+SET 工作時數 = 工作時數 - 5
+WHERE 計劃代號 = 1 AND 身分證號碼 IN (SELECT 身分證號碼 FROM [120.96.63.45].公司.dbo.員工 WHERE 姓名 = '賴怡君');
+IF @@ERROR != 0  OR @@ROWCOUNT = 0
+   BEGIN
+     PRINT '修改賴怡君所參加計劃代號 1 的工作時數時產生錯誤 !!'
+     RETURN
+   END
+UPDATE [120.96.63.45].公司.dbo.參加
+SET 工作時數 = 工作時數 + 5
+WHERE 計劃代號 = 1 AND 身分證號碼 IN (SELECT 身分證號碼 FROM [120.96.63.45].公司.dbo.員工 WHERE 姓名 = '李紹綸');
+IF @@ERROR != 0 OR @@ROWCOUNT = 0
+   BEGIN
+     ROLLBACK TRAN
+     PRINT '修改李紹綸所參加計劃代號 1 的工作時數時產生錯誤 !!'
+     RETURN
+   END
+ELSE COMMIT TRAN
+SELECT * FROM [120.96.63.45].公司.dbo.參加;
+
+/* 5-1 */
+CREATE RULE 身分證號碼規則
+AS @身分證號碼 LIKE '[A-Z][1-2][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]';
+
+/* 5-2 */
+CREATE RULE 年齡規則
+AS @年齡 BETWEEN 16 AND 65;
+
+/* 5-3 */
+CREATE RULE 性別規則
+AS @性別 IN ('男', '女');
+
+/* 5-4 */
+USE 公司;
+EXEC sp_bindrule 身分證號碼規則, 'dbo.員工.身分證號碼'; 
+EXEC sp_bindrule 身分證號碼規則, 'dbo.員工.直屬上司'; 
+EXEC sp_bindrule 身分證號碼規則, 'dbo.員工電話.身分證號碼'; 
+EXEC sp_bindrule 身分證號碼規則, 'dbo.部門.經理身分證號碼'; 
+EXEC sp_bindrule 身分證號碼規則, 'dbo.員工眷屬.身分證號碼'; 
+EXEC sp_bindrule 身分證號碼規則, 'dbo.參加.身分證號碼';
+
+/* 5-7 */
+INSERT INTO 公司.dbo.員工
+VALUES('L511111111','郭信義','1964-07-30','台北市忠孝路186號',55000,Null,Null);
+
+/* 5-8 */
+EXEC sp_bindrule 年齡規則, 'dbo.年齡類型';
+
+/* 5-11 */
+EXEC sp_unbindrule 'dbo.員工.身分證號碼'; 
+EXEC sp_unbindrule 'dbo.員工.直屬上司'; 
+EXEC sp_unbindrule 'dbo.員工電話.身分證號碼'; 
+EXEC sp_unbindrule 'dbo.部門.經理身分證號碼'; 
+EXEC sp_unbindrule 'dbo.員工眷屬.身分證號碼'; 
+EXEC sp_unbindrule 'dbo.參加.身分證號碼';
+
+/* 5-12 */
+EXEC sp_unbindrule 'dbo.年齡類型';
+
+/* 5-13 */
+DROP RULE 身分證號碼規則, 年齡規則;
+
+/* 5-23 */
+CREATE DEFAULT 系統日期預設值 AS getdate();
+
+/* 5-24 */
+CREATE DEFAULT 薪水預設值 AS 25000;
+
+/* 5-25 */
+EXEC sp_bindefault 系統日期預設值, 'dbo.部門.到職日';
+
+/* 5-29 */
+EXEC sp_unbindefault 'dbo.部門.到職日';
+
+/* 5-32 */
+DROP DEFAULT 系統日期預設值;
+
+/* 5-42 */
+-- ================================================
+-- Template generated from Template Explorer using:
+-- Create Procedure (New Menu).SQL
+--
+-- Use the Specify Values for Template Parameters 
+-- command (Ctrl-Shift-M) to fill in the parameter 
+-- values below.
+--
+-- This block of comments will not be included in
+-- the definition of the procedure.
+-- ================================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		<Author,,Name>
+-- Create date: <Create Date,,>
+-- Description:	<Description,,>
+-- =============================================
+CREATE PROCEDURE spLogin 
+	-- Add the parameters for the stored procedure here
+	@UserID VARCHAR(15), 
+	@Password CHAR(10)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+    -- Insert statements for procedure here
+	SELECT * FROM 員工 WHERE 姓名 = @UserID and 身分證號碼 = @Password
+END
+GO
+
+/* 5-46 */
+USE [公司]
+GO
+
+DECLARE	@return_value int
+
+EXEC	@return_value = [dbo].[spLogin]
+		@UserID = N'李紹綸',
+		@Password = N'E123456789'
+
+SELECT	'Return Value' = @return_value
+
+GO
+
+/* 5-49 */
+CREATE PROCEDURE spLogin 
+	@UserID VARCHAR(15), 
+	@Password CHAR(10)
+AS
+BEGIN
+	SELECT * FROM 員工 WHERE 姓名 = @UserID and 身分證號碼 = @Password
+END ;
+
+/* 5-50 */
+EXEC spLogin @UserID = '李紹綸', @Password = 'E123456789';
+
+/* 5-51 */
+DROP PROCEDURE spLogin;
+
+/* 5-57 */
+-- ================================================
+-- Template generated from Template Explorer using:
+-- Create Trigger (New Menu).SQL
+--
+-- Use the Specify Values for Template Parameters 
+-- command (Ctrl-Shift-M) to fill in the parameter 
+-- values below.
+--
+-- See additional Create Trigger templates for more
+-- examples of different Trigger statements.
+--
+-- This block of comments will not be included in
+-- the definition of the function.
+-- ================================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		<Author,,Name>
+-- Create date: <Create Date,,>
+-- Description:	<Description,,>
+-- =============================================
+CREATE TRIGGER 超時工作 
+   ON  參加 
+   AFTER INSERT
+AS 
+BEGIN
+   IF (SELECT SUM(參加.工作時數) 
+         FROM 參加 JOIN inserted 
+	     ON 參加.身分證號碼 = inserted.身分證號碼) > 40
+   BEGIN
+      RAISERROR ('此員工每周總工作時數已超過40小時，新增失敗!', 16, 1);
+      ROLLBACK TRANSACTION;
+      RETURN 
+   END
+END
+GO
+
+/* 5-61 */
+CREATE TRIGGER 超時工作 
+   ON  參加 
+   AFTER INSERT
+AS 
+BEGIN
+   IF (SELECT SUM(參加.工作時數) 
+         FROM 參加 JOIN inserted 
+	     ON 參加.身分證號碼 = inserted.身分證號碼) > 40
+   BEGIN
+      RAISERROR ('此員工每周總工作時數已超過40小時，新增失敗!', 16, 1);
+      ROLLBACK TRANSACTION;
+      RETURN 
+   END
+END
+
+/* 5-62 */
+INSERT INTO 參加(身分證號碼, 計劃代號, 工作時數) VALUES('E123456789', 4,20);
+
+/* 5-63 */
+DISABLE TRIGGER 超時工作 ON 參加;
+
+/* 5-64 */
+ENABLE TRIGGER 超時工作 ON 參加;
+
+/* 5-65 */
+DROP TRIGGER 超時工作;
+
+/* 5-66 */
+CREATE TRIGGER 禁止資料表綱目修改
+    ON DATABASE 
+	FOR ALTER_TABLE 
+AS 
+BEGIN
+   SELECT EVENTDATA().value('(/EVENT_INSTANCE/TSQLCommand/CommandText)[1]', 'nvarchar(max)')
+   BEGIN
+      RAISERROR ('公司資料庫中是禁止所有資料表綱目修改哦，修改資料表綱目失敗!', 16, 1);
+	  ROLLBACK TRANSACTION;
+	  RETURN;
+   END
+END
+
+/* 5-67 */
+ALTER TABLE 公司.dbo.員工 DROP COLUMN 姓名;
+
+/* 5-68 */
+USE 公司;
+DROP TRIGGER 禁止資料表綱目修改 ON DATABASE;
+
+/* 7-2 */
+EXEC sp_configure  'external scripts enabled', 1;  
+RECONFIGURE WITH OVERRIDE; 
+
+/* 7-3 */
+EXEC sp_execute_external_script
+@language = N'R', 
+@script = N'
+Sum <- sum(1:10);
+MeansValue <- mean(1:10);
+Median <- median(1:10);
+StandardDeviation <- sd(1:10);
+Variance <- var(1:10);
+OutputDataSet <- data.frame(Sum, MeansValue, Median, StandardDeviation, Variance); 
+',@input_data_1 = N''
+WITH RESULT SETS ((總和 INT, 平均值 INT, 中位數 INT, 標準差 INT, 變異數 INT));
+
+/* 7-4 */
+EXEC sp_execute_external_script
+@language = N'R', 
+@script = N'
+Country <- c("Japan","USA","ChineseTaipei","Korea","Cuba","Japan","USA","ChineseTaipei","Korea","Cuba");
+WBSCScore <- c(5154,5091,4702,4641,3727,5515,5453,4554,4812,3813);
+Population <- c(12681,32076,2351,5062,1127,12692,32460,2352,5055,1141);
+Year <- c(2015,2015,2015,2015,2015,2016,2016,2016,2016,2016);
+OutputDataSet <- data.frame(Country,WBSCScore,Population,Year)
+',@input_data_1 = N''
+WITH RESULT SETS ((國家名稱 NVARCHAR(30), WBSC積分 INT, 人口數 INT, 年度 INT));
+
+/* 7-5 */
+CREATE PROCEDURE uspWorldbaseball
+AS
+EXEC sp_execute_external_script
+@language = N'R', 
+@script = N'
+Country <- c("Japan","USA","ChineseTaipei","Korea","Cuba","Japan","USA","ChineseTaipei","Korea","Cuba");
+WBSCScore <- c(5154,5091,4702,4641,3727,5515,5453,4554,4812,3813);
+Population <- c(12681,32076,2351,5062,1127,12692,32460,2352,5055,1141);
+Year <- c(2015,2015,2015,2015,2015,2016,2016,2016,2016,2016);
+OutputDataSet <- data.frame(Country,WBSCScore,Population,Year)
+',@input_data_1 = N''
+WITH RESULT SETS ((國家名稱 NVARCHAR(30), WBSC積分 INT, 人口數 INT, 年度 INT));
+
+/* 7-6 */
+--建立一個資料表
+CREATE TABLE Worldbaseball
+(國家名稱 NVARCHAR(30), WBSC積分 INT, 人口數 INT, 年度 INT);
+
+--透過 INSERT INTO 將預存程序資料集寫入資料表
+INSERT INTO Worldbaseball EXECUTE uspWorldbaseball;
+
+--查詢剛才寫入資料表內容
+SELECT * FROM WorldBaseball;
+
+/* 7-7 */
+EXEC sp_execute_external_script
+@language = N'R', 
+@script = N'
+OutputDataSet <- InputDataSet
+',@input_data_1 = N'SELECT * FROM WorldBaseball'
+WITH RESULT SETS ((國家名稱 NVARCHAR(30), WBSC積分 INT, 人口數 INT, 年度 INT));
+
+/* 7-8 */
+EXEC sp_execute_external_script
+@language = N'R', 
+@script = N'
+PackageList <-installed.packages();
+PackageInfo <- PackageList[,c(1:3)];
+OutputDataSet <- as.data.frame(PackageInfo);
+',@input_data_1 = N''
+WITH RESULT SETS ((套件名稱 NVARCHAR(255), 目錄路徑 NVARCHAR(255), 版本 NVARCHAR(255)));
+
+/* 7-11 */
+lib.SQL <- "C:\\Program Files\\Microsoft SQL Server\\MSSQL13.SQLEXPRESS01\\R_SERVICES\\library"
+install.packages("plyr",dependencies = TRUE,lib=lib.SQL)
+
+/* 7-12 */
+EXEC sp_execute_external_script
+@language = N'R', 
+@script = N'
+library("plyr")
+OutputDataSet <- ddply(InputDataSet, c("Country"), function(df) cor(df$WBSCScore,df$Population));
+',@input_data_1 = N'SELECT * FROM WorldBaseball'
+WITH RESULT SETS ((國家名稱 NVARCHAR(30), 相關係數 NUMERIC(6,3)));
+
+/* 7-13 */
+EXEC sp_execute_external_script
+@language = N'R', 
+@script = N'
+library("Rcpp")
+library("plyr")
+OutputDataSet <- ddply(InputDataSet, c("Country"), function(df) cor(df$WBSCScore,df$Population));
+',@input_data_1 = N'SELECT * FROM WorldBaseball'
+WITH RESULT SETS ((國家名稱 NVARCHAR(30), 相關係數 NUMERIC(6,3)));
+
+/* 7-19 */
+SELECT REPLACE([Production].[Product].Name ,' ' , '') AS [Name], count( [Production].[Product].ProductID) AS [Count]
+FROM [Purchasing].[PurchaseOrderDetail], [Production].[Product]
+WHERE [Purchasing].[PurchaseOrderDetail].ProductID = [Production].[Product].ProductID
+GROUP BY [Production].[Product].Name
+ORDER BY [Count] DESC;
+
+/* 7-20 */
+EXEC sp_execute_external_script
+@language = N'R', 
+@script = N'
+image_file = tempfile();
+jpeg(filename = image_file,width=1024,height=768);
+library(RColorBrewer)
+library(wordcloud)
+print(wordcloud(InputDataSet$Name, InputDataSet$Count, min.freq = 60, colors = brewer.pal(n = 10, name = ''Dark2'')));
+dev.off();
+OutputDataSet <- data.frame(data=readBin(file(image_file,"rb"),what=raw(),n=1e6));
+', @input_data_1 = N'
+SELECT REPLACE([Production].[Product].Name ,'' '' , '''') AS [Name], count( [Production].[Product].ProductID) AS [Count]
+FROM [Purchasing].[PurchaseOrderDetail], [Production].[Product]
+WHERE [Purchasing].[PurchaseOrderDetail].ProductID = [Production].[Product].ProductID
+GROUP BY [Production].[Product].Name
+ORDER BY [Count] DESC'
+WITH RESULT SETS ((文字雲 VARBINARY(MAX) NOT NULL));
+
+/* 7-36 */
+EXEC sp_attach_db @dbname ='AdventureWorksDW2012', 
+@filename1 ='C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\DATA\AdventureWorksDW2012_Data.mdf';
